@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Infix to Postfix Converter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f0f0f0;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      .container {
+        max-width: 700px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 20px;
+      }
+
+      input[type='text'] {
+        padding: 10px;
+        font-size: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      button {
+        padding: 10px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        font-size: 1rem;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+      }
+
+      th {
+        background-color: #eee;
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Infix to Postfix Converter</h2>
+
+      <form id="expressionForm">
+        <input
+          type="text"
+          id="infixInput"
+          placeholder="Enter infix expression (e.g., A-(B*3+(C/D*E)*F))"
+          required
+        />
+        <button type="submit">Convert to Postfix</button>
+      </form>
+
+      <table id="conversionTable" class="hidden">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Stack</th>
+            <th>Output</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      function infixToPostfixWithSteps(expression) {
+        const stack = [];
+        let output = '';
+        const table = [];
+
+        const precedence = {
+          '+': 1,
+          '-': 1,
+          '*': 2,
+          '/': 2,
+          '%': 2,
+          '^': 3,
+        };
+
+        const isOperator = (ch) => '+-*/%^'.includes(ch);
+        const isOperand = (ch) => /[a-zA-Z0-9]/.test(ch);
+
+        for (let token of expression) {
+          if (isOperand(token)) {
+            output += token;
+          } else if (token === '(') {
+            stack.push(token);
+          } else if (token === ')') {
+            while (stack.length && stack[stack.length - 1] !== '(') {
+              output += stack.pop();
+            }
+            stack.pop(); // Remove '('
+          } else if (isOperator(token)) {
+            while (
+              stack.length &&
+              stack[stack.length - 1] !== '(' &&
+              precedence[token] <= precedence[stack[stack.length - 1]]
+            ) {
+              output += stack.pop();
+            }
+            stack.push(token);
+          }
+
+          // ✅ Log only after handling the token (no intermediate rows)
+          table.push({ token, stack: [...stack], output });
+        }
+
+        // Final pops after scanning all tokens
+        while (stack.length) {
+          output += stack.pop();
+          table.push({ token: '(finalize)', stack: [...stack], output });
+        }
+
+        return table;
+      }
+
+      function renderTable(data) {
+        const table = document.getElementById('conversionTable');
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = ''; // Clear previous rows
+
+        data.forEach((step) => {
+          const row = document.createElement('tr');
+
+          const tokenCell = document.createElement('td');
+          tokenCell.textContent = step.token;
+          row.appendChild(tokenCell);
+
+          const stackCell = document.createElement('td');
+          stackCell.textContent = step.stack.join(' ');
+          row.appendChild(stackCell);
+
+          const outputCell = document.createElement('td');
+          outputCell.textContent = step.output;
+          row.appendChild(outputCell);
+
+          tbody.appendChild(row);
+        });
+
+        table.classList.remove('hidden');
+      }
+
+      // Handle form submission
+      document
+        .getElementById('expressionForm')
+        .addEventListener('submit', function (e) {
+          e.preventDefault();
+          const expression = document.getElementById('infixInput').value.trim();
+          if (expression.length === 0) return;
+
+          const steps = infixToPostfixWithSteps(expression);
+          renderTable(steps);
+        });
+    </script>
+  </body>
+</html>
